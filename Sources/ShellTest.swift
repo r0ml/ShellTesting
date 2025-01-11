@@ -294,7 +294,7 @@ public actor ShellProcess {
     try await run(ex, withStdin: withStdin, output: output, args: args)
   }
   
-  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: String? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
+  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
     let (r, j, e) = switch withStdin {
     case is String:
@@ -313,12 +313,31 @@ public actor ShellProcess {
       fatalError("not possible")
     }
     #expect(r == Int32(status), Comment(rawValue: e ?? ""))
-    if let output { #expect(j == output) }
+    if let output {
+      switch output {
+        case is String:
+          #expect(j == output as? String)
+        case is Substring:
+          #expect(j! == output as! Substring)
+        case is Regex<String>:
+          let jj = output as! Regex<String>
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        case is Regex<Substring>:
+          let jj = output as! Regex<Substring>
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        default:
+          fatalError("not possible")
+      }
+    }
+    
+//    if let output { #expect(j == output) }
     if let error {
       if let e {
         switch error {
           case is String:
             #expect(e == error as? String)
+          case is Substring:
+            #expect(e == (error as! Substring))
           case is Regex<String>:
             let ee = error as! Regex<String>
             #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
@@ -356,6 +375,8 @@ public actor ShellProcess {
         switch error {
           case is String:
             #expect(e == error as? String)
+          case is Substring:
+            #expect(e == (error as! Substring) )
           case is Regex<String>:
             let ee = error as! Regex<String>
             #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
@@ -386,6 +407,8 @@ extension URL : Arguable {}
 public protocol Matchable {}
 extension String : Matchable {}
 extension Regex : Matchable {}
+extension Substring : Matchable {}
+
 
   // ==========================================================
   
@@ -484,11 +507,11 @@ public protocol ShellTest {
 
 extension ShellTest {
   
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: String? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: URL? = nil) async throws {
+  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: URL? = nil) async throws {
     try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd)
   }
 
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: String? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
+  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd)
   }
 
