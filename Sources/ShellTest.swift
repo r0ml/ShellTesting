@@ -580,7 +580,7 @@ extension ShellProcess {
     } else {
       let b = Bundle(for: ShellProcess.self)
       // Doens't work without the directory hint!
-      url = b.bundleURL.deletingLastPathComponent().appending(path: "text_cmds_\(suite).bundle").appending(path: "Resources", directoryHint: .isDirectory)
+      url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suite).bundle").appending(path: "Resources", directoryHint: .isDirectory)
       if let name {
         url = url?.appending(path: name)
       }
