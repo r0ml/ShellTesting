@@ -45,13 +45,14 @@ public actor ShellProcess {
   }
   
   public init(_ ex: String, _ args : [Arguable], env: [String:String] = [:], cd: URL? = nil) {
+    let envv = ProcessInfo.processInfo.environment
     var envx = ProcessInfo.processInfo.environment
     env.forEach { envx[$0] = $1 }
     
     var execu : URL? = nil
     // FIXME: test for TEST_ORIGINAL
-    if let _ = envx["TEST_ORIGINAL"] {
-      let path = envx["PATH"]!.split(separator: ":", omittingEmptySubsequences: true)
+    if let _ = envv["TEST_ORIGINAL"] {
+      let path = envv["PATH"]!.split(separator: ":", omittingEmptySubsequences: true)
       let f = FileManager.default
       for d in path {
         if f.isExecutableFile(atPath: d+"/"+ex) {
@@ -85,8 +86,12 @@ public actor ShellProcess {
     process.arguments = aargs
     process.environment = envx
     process.currentDirectoryURL = cur
-    process.executableURL = execu!
     process.standardOutput = output
+    if let execu {
+      process.executableURL = execu
+    } else {
+      fatalError("executable not found: \(ex)")
+    }
   }
   
 /*  public func setDirectory(_ dir : URL) {
