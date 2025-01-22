@@ -510,7 +510,7 @@ func numberStream() -> AsyncStream<Int> {
 
 public protocol ShellTest {
   var cmd : String { get }
-  var suite : String { get }
+  var suiteBundle : String { get }
 }
 
 extension ShellTest {
@@ -538,11 +538,11 @@ extension ShellTest {
   
   
   public func fileContents(_ name : String) throws -> String {
-    return try ShellProcess.fileContents(suite, name)
+    return try ShellProcess.fileContents(suiteBundle, name)
   }
   
   public func inFile(_ name : String) throws -> URL {
-    return try ShellProcess.inFile(suite, name)
+    return try ShellProcess.inFile(suiteBundle, name)
   }
 
 
@@ -553,8 +553,8 @@ extension ShellProcess {
   /// - Parameters:
   ///   - name: fileName
   /// - Returns: Data of the contents of the file on nil if not found
-  static public func fileContents(_ suite: String, _ name: String) throws -> String {
-    let url = try geturl(suite, name)
+  static public func fileContents(_ suiteBundle: String, _ name: String) throws -> String {
+    let url = try geturl(suiteBundle, name)
     let data = try Data(contentsOf: url)
     guard let res = String(data: data, encoding: .utf8) else {
       throw StringEncodingError.only(.utf8)
@@ -562,19 +562,20 @@ extension ShellProcess {
     return res
   }
 
-  static public func fileData(_ suite: String, _ name: String) throws -> Data {
-  let url = try geturl(suite, name)
+  static public func fileData(_ suiteBundle: String, _ name: String) throws -> Data {
+  let url = try geturl(suiteBundle, name)
   let data = try Data(contentsOf: url)
   return data
 }
 
   // returns the full name of a test resource file
- static public func inFile(_ suite : String, _ name : String) throws -> URL {
-    return try geturl(suite, name)
+ static public func inFile(_ suiteBundle : String, _ name : String) throws -> URL {
+    return try geturl(suiteBundle, name)
   }
   
- static public func geturl(_ suite : String, _ name : String? = nil) throws -> URL {
+ static public func geturl(_ suiteBundle : String, _ name : String? = nil) throws -> URL {
     var url : URL?
+   print("suiteBundle: \(suiteBundle)")
     if let _ = ProcessInfo.processInfo.environment["XCTestSessionIdentifier"] {
       let ru = Bundle(for: ShellProcess.self).resourceURL
       if let name {
@@ -583,9 +584,11 @@ extension ShellProcess {
         url = ru
       }
     } else {
+      print("suiteBundle: \(suiteBundle)")
+
       let b = Bundle(for: ShellProcess.self)
       // Doens't work without the directory hint!
-      url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suite).bundle").appending(path: "Resources", directoryHint: .isDirectory)
+      url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
       if let name {
         url = url?.appending(path: name)
       }
