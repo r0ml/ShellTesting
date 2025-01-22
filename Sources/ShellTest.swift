@@ -511,6 +511,7 @@ func numberStream() -> AsyncStream<Int> {
 public protocol ShellTest {
   var cmd : String { get }
   var suiteBundle : String { get }
+//  var suiteBundle : String { get }
 }
 
 extension ShellTest {
@@ -545,6 +546,9 @@ extension ShellTest {
     return try ShellProcess.inFile(suiteBundle, name)
   }
 
+  public func geturl(_ name : String? = nil) throws -> URL {
+    return try ShellProcess.geturl(suiteBundle, name)
+  }
 
 }
 
@@ -575,7 +579,6 @@ extension ShellProcess {
   
  static public func geturl(_ suiteBundle : String, _ name : String? = nil) throws -> URL {
     var url : URL?
-   print("suiteBundle: \(suiteBundle)")
     if let _ = ProcessInfo.processInfo.environment["XCTestSessionIdentifier"] {
       let ru = Bundle(for: ShellProcess.self).resourceURL
       if let name {
@@ -584,8 +587,6 @@ extension ShellProcess {
         url = ru
       }
     } else {
-      print("suiteBundle: \(suiteBundle)")
-
       let b = Bundle(for: ShellProcess.self)
       // Doens't work without the directory hint!
       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
