@@ -317,7 +317,9 @@ public actor ShellProcess {
     default:
       fatalError("not possible")
     }
-    #expect(r == Int32(status), Comment(rawValue: e ?? ""))
+    
+    // FIXME: why did Comment break?
+    #expect(r == Int32(status)) // , Comment(rawValue: e ?? ""))
     if let output {
       switch output {
         case is String:
