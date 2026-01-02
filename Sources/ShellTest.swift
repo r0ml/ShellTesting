@@ -21,6 +21,8 @@
 @_exported import Foundation
 import Synchronization
 @_exported import Testing
+@_exported import Subprocess
+
 
 public actor ShellProcess {
   var process : Process = Process()
@@ -608,3 +610,5 @@ extension ShellProcess {
   }
 
 }
+
+

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 
 /*
   The MIT License (MIT)
@@ -20,7 +20,6 @@
  */
 
 import PackageDescription
-import Foundation
 
 // run tests like this:
 // PATH=/usr/bin:/bin:/sbin TEST_ORIGINAL=1 swift test --no-parallel
@@ -31,7 +30,13 @@ let package = Package(
   platforms: [.macOS(.v15)],
   products: [
     .library(name: "ShellTesting", targets: ["ShellTesting"])],
+  dependencies: [
+    .package(url: "https://github.com/swiftlang/swift-subprocess.git", branch: "main")
+  ],
   targets: [
-    .target(name: "ShellTesting")
+    .target(name: "ShellTesting",
+            dependencies: [
+              .product(name: "Subprocess", package: "swift-subprocess")
+            ])
     ]
 )
