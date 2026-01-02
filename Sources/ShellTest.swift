@@ -465,7 +465,7 @@ public final actor AsyncDataActor {
   }
 }
 
-public func mkdir(_ s : String) throws -> URL {
+public func tmpdir(_ s : String) throws -> URL {
   let j = URL(string: s, relativeTo: FileManager.default.temporaryDirectory)!
   try FileManager.default.createDirectory(at: j, withIntermediateDirectories: true, attributes: nil)
   return j
