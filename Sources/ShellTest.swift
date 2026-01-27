@@ -338,6 +338,11 @@ public actor ShellProcess {
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
         case let jj as Regex<Any>:
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        case _ where eraseToAnyRegex(output) != nil:
+            let jj = try #require(j)
+            let r = eraseToAnyRegex(output)!
+            #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected output"))
+
         default:
           fatalError("not possible")
       }
@@ -613,3 +618,39 @@ extension ShellProcess {
 }
 
 
+// ==================================================================================================
+
+// Helper that erases any Regex<Output> to Regex<AnyRegexOutput>
+private func eraseToAnyRegex(_ value: Any) -> Regex<AnyRegexOutput>? {
+    // Try the common concrete cases first
+    if let r = value as? Regex<AnyRegexOutput> { return r }
+    if let r = value as? Regex<String> { return Regex<AnyRegexOutput>(r) }
+    if let r = value as? Regex<Substring> { return Regex<AnyRegexOutput>(r) }
+
+    // Fall back to a generic-erasure path using reflection on the generic type
+    // We can't write `if let r = value as? Regex<some Output>` directly,
+    // but we can attempt to dynamically call a generic function.
+    func eraseGeneric<Output>(_ r: Regex<Output>) -> Regex<AnyRegexOutput> {
+        Regex<AnyRegexOutput>(r)
+    }
+
+    // Attempt to cast to the existential `Any`-boxed generic and re-dispatch
+    if let anyRegex = value as? any AnyRegexBox {
+        return anyRegex.erase()
+    }
+
+    // As a last resort, try a mirror-based bridge for Regex<tuple> cases:
+    // If you control the inputs, prefer routing them through AnyRegexBox below.
+    return nil
+}
+
+// A small box protocol to enable dynamic erasure of Regex<Output>
+private protocol AnyRegexBox {
+    func erase() -> Regex<AnyRegexOutput>
+}
+
+extension Regex: AnyRegexBox {
+    func erase() -> Regex<AnyRegexOutput> {
+        Regex<AnyRegexOutput>(self)
+    }
+}
