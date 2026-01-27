@@ -336,7 +336,7 @@ public actor ShellProcess {
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
         case let jj as Regex<AnyRegexOutput>:
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
-        case let jj as Regex<any RegexComponent>:
+        case let jj as Regex<Any>:
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
         default:
           fatalError("not possible")
