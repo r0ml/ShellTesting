@@ -1,4 +1,3 @@
-// swift-tools-version: 6.1
 
 /*
   The MIT License (MIT)
@@ -19,27 +18,36 @@
   OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import PackageDescription
+public final actor AsyncDataActor {
+  var d : [Data]
+  var delay : Double
+  var first = true
 
-// run tests like this:
-// PATH=/usr/bin:/bin:/sbin TEST_ORIGINAL=1 swift test --no-parallel
+  public init(_ d : [Data], delay : Double = 0.5) {
+    self.d = d
+    self.delay = delay
+  }
 
-let package = Package(
-  name: "ShellTesting",
-  // Mutex is only available in v15 or newer
-  platforms: [.macOS(.v15)],
-  products: [
-    .library(name: "ShellTesting", targets: ["ShellTesting"])],
-  dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-subprocess.git", branch: "main"),
-    .package(url: "https://github.com/r0ml/CMigration.git", branch: "main"),
-  ],
+  func consumeD() -> Data? {
+    if self.d.isEmpty { return nil }
+    let d = self.d.removeFirst()
+    return d
+  }
 
-  targets: [
-    .target(name: "ShellTesting",
-            dependencies: [
-              .product(name: "Subprocess", package: "swift-subprocess"),
-              .product(name: "CMigration", package: "CMigration"),
-            ])
-    ]
-)
+  func notFirst() {
+    self.first = false
+  }
+
+  public nonisolated var stream : AsyncStream<Data> {
+    return AsyncStream(unfolding: {
+      if await self.first {
+        await self.notFirst()
+      } else {
+        try? await Task.sleep(nanoseconds: UInt64(Double(NSEC_PER_SEC) * self.delay) )
+      }
+      let d = await self.consumeD()
+      return d
+    })
+  }
+}
+
