@@ -25,11 +25,11 @@ import Synchronization
 @_exported import Subprocess
 
 public struct ProcessOutput : Sendable {
-  let code : Int32
-  let data : [UInt8]
-  let error : String
+  public let code : Int32
+  public let data : [UInt8]
+  public let error : String
 
-  var string : String { String(decoding: data, as: UTF8.self) }
+  public var string : String { String(decoding: data, as: UTF8.self) }
 }
 
 public actor ShellProcess {
