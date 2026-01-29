@@ -132,95 +132,6 @@ public actor ShellProcess {
 
   }
 
-  /*
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult
-  public func run(_ input : String?) async throws -> (Int32, String?, String?) {
-    return try await run( input?.data(using: .utf8)! )
-  }
-  
-  // ============================================================
-  // passing in bytes instead of strings ....
-  
-  
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult
-  public func run( _ input : Data?) async throws -> (Int32, String?, String?) {
-    let asi = if let input { AsyncDataActor([input]).stream }
-    else { nil as AsyncStream<Data>?}
-    return try await run(asi)
-  }
-
-
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  ///  The easiest way to generate the required AsyncStream is with:
-  ///      AsyncDataActor(input).stream // where input : [Data]
-  @discardableResult
-  public func run(_ input : AsyncStream<Data>? = nil) async throws -> (Int32, String?, String?) {
-    try theLaunch(input)
-    return await theCapture()
-  }
-
-
-  @discardableResult
-  public func run(_ input : FileHandle) async throws -> (Int32, String?, String?) {
-    try theLaunch(input)
-    return await theCapture()
-  }
-*/
-
-
-  /*
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult public func runBinary( _ input : Stdinable? = nil) async throws -> ProcessOutput {
-    switch input {
-      case is Data:
-        let asi = AsyncDataActor([input as! Data]).stream
-        return try await runBinary(asi)
-      case is String:
-        return try await runBinary( (input as! String).data(using: .utf8)! )
-      case is FileHandle:
-        try theLaunch(input as! FileHandle)
-        return await theCaptureAsData()
-      case is AsyncStream<Data>:
-        try theLaunch(input as? AsyncStream<Data>)
-        return await theCaptureAsData()
-      case nil:
-        try theLaunch(nil)
-        return await theCaptureAsData()
-      default:
-        fatalError("not possible")
-    }
-  }
-*/
-
-  /*
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult
-  public func runBinary( _ input : Data) async throws -> (Int32, Data, String) {
-    let asi = AsyncDataActor([input]).stream
-    return try await runBinary(asi)
-  }
-  
-  @discardableResult
-  public func runBinary(_ input : String) async throws -> (Int32, Data, String) {
-    return try await runBinary( input.data(using: .utf8)! )
-  }
-
-  @discardableResult
-  public func runBinary(_ input : FileHandle) async throws -> (Int32, Data, String) {
-    try theLaunch(input)
-    return await theCaptureAsData()
-  }
-
-  @discardableResult
-  public func runBinary(_ input : AsyncStream<Data>? = nil) async throws -> (Int32, Data, String) {
-    try theLaunch(input)
-    return await theCaptureAsData()
-  }
-*/
-
-
   // ==========================================================
   
    public func setOutput(_ o : FileHandle) {
@@ -353,7 +264,7 @@ public actor ShellProcess {
     try await run(ex, withStdin: withStdin, output: output, args: args)
   }
   
-  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
+  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil, _ validation : ((ProcessOutput) -> Bool)? = nil ) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
     let po = switch withStdin {
     case is String:
@@ -419,48 +330,13 @@ public actor ShellProcess {
           default: fatalError("not possible")
         }
       }
-  }
-  
-  /*
-  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Data, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
-    let p = ShellProcess(ex, args, env: env, cd: cd)
-    let (r, j, e) = switch withStdin {
-    case is String:
-      try await p.runBinary(withStdin as! String)
-    case is Data:
-      try await p.runBinary(withStdin as! Data)
-    case is FileHandle:
-      try await p.runBinary(withStdin as! FileHandle)
-    case is URL:
-      try await p.runBinary(FileHandle(forReadingFrom: withStdin as! URL))
-    case is AsyncStream<Data>:
-      try await p.runBinary(withStdin as? AsyncStream<Data>)
-    case .none:
-      try await p.runBinary()
-    default:
-      fatalError("not possible")
-    }
-    #expect(r == Int32(status), Comment(rawValue: e ))
-    #expect(j == output)
-    if let error {
-        switch error {
-          case is String:
-            #expect(e == error as? String)
-          case is Substring:
-            #expect(e == (error as! Substring) )
-          case is Regex<String>:
-            let ee = error as! Regex<String>
-            #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
-          case is Regex<Substring>:
-            let ee = error as! Regex<Substring>
-            #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
-          default: fatalError("not possible")
-      }
-    }
-  }
-*/
 
-  
+    if let validation {
+      #expect(validation(po))
+    }
+  }
+
+
 }
 
 
@@ -512,19 +388,5 @@ extension ShellProcess {
   }
 
 }
-
-/*
-public protocol StringOrData : Sendable {
-}
-extension String : StringOrData {}
-extension Data : StringOrData {}
-extension Substring : StringOrData {}
-
-func areEqual(_ a : StringOrData?, _ b : StringOrData?) -> Bool {
-    if a as? String == b as? String { return true }
-    if a as? Data == b as? Data { return true }
-    return false
-  }
-*/
 
 // ==================================================================================================
