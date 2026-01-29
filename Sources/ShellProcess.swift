@@ -24,6 +24,13 @@ import Synchronization
 @_exported import Testing
 @_exported import Subprocess
 
+public struct ProcessOutput : Sendable {
+  let code : Int32
+  let data : [UInt8]
+  let error : String
+
+  var string : String { String(decoding: data, as: UTF8.self) }
+}
 
 public actor ShellProcess {
   var process : Process = Process()
@@ -35,7 +42,7 @@ public actor ShellProcess {
   
   let odat = Mutex(Data())
   let edat = Mutex(Data())
-  
+
   public func interrupt() {
     defer {
       Task { await cleanup() }
@@ -103,7 +110,7 @@ public actor ShellProcess {
   */
 
 
-  @discardableResult public func run(_ input : Stdinable? = nil) async throws -> (Int32, (any StringOrData)?, String?) {
+  @discardableResult public func run(_ input : Stdinable? = nil) async throws -> ProcessOutput {
         switch input {
           case is Data:
             let asi = AsyncDataActor([input as! Data]).stream
@@ -112,7 +119,7 @@ public actor ShellProcess {
             return try await run( (input as! String).data(using: .utf8)! )
           case is FileHandle:
             try theLaunch(input as! FileHandle)
-            return await theCaptureAsData()
+            return await theCapture()
           case is AsyncStream<Data>:
             try theLaunch(input as? AsyncStream<Data>)
             return await theCapture()
@@ -163,8 +170,9 @@ public actor ShellProcess {
 */
 
 
+  /*
   /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult public func runBinary( _ input : Stdinable? = nil) async throws -> (Int32, (any StringOrData)?, String) {
+  @discardableResult public func runBinary( _ input : Stdinable? = nil) async throws -> ProcessOutput {
     switch input {
       case is Data:
         let asi = AsyncDataActor([input as! Data]).stream
@@ -184,6 +192,7 @@ public actor ShellProcess {
         fatalError("not possible")
     }
   }
+*/
 
   /*
   /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
@@ -325,18 +334,11 @@ public actor ShellProcess {
     edat.withLock { $0.append(x) }
   }
   
-  public func theCapture() async -> (Int32, String?, String?) {
-    await process.waitUntilExitAsync()
-    let k1 = String(data: odat.withLock { $0 }, encoding: .utf8)
-    let k2 = String(data: edat.withLock { $0 }, encoding: .utf8)
-    return (process.terminationStatus, k1, k2)
-  }
-  
-  public func theCaptureAsData() async -> (Int32, Data, String ) {
+  public func theCapture() async -> ProcessOutput {
     await process.waitUntilExitAsync()
     let k1 = odat.withLock { $0 }
-    let k2 = String(data: edat.withLock { $0 }, encoding: .utf8) ?? "unable to convert error to utf8"
-    return (process.terminationStatus, k1, k2 )
+    let k2 = String(decoding: edat.withLock { $0 }, as: UTF8.self)
+    return ProcessOutput(code: process.terminationStatus, data: Array(k1), error: k2)
   }
   
   func cleanup() async {
@@ -353,10 +355,9 @@ public actor ShellProcess {
   
   static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
-    let fn : ((Stdinable?) async throws -> (Int32, (any StringOrData)?, String?)) = (output as? Data != nil) ? p.runBinary : p.run
-    let (r, j, e) = switch withStdin {
+    let po = switch withStdin {
     case is String:
-      try await fn(withStdin as? String)
+        try await p.run(withStdin as? String)
     case is Data:
       try await p.run(withStdin as? Data)
     case is FileHandle:
@@ -372,15 +373,15 @@ public actor ShellProcess {
     }
     
     // FIXME: why did Comment break?
-    #expect(r == Int32(status)) // , Comment(rawValue: e ?? ""))
+    #expect(po.code == Int32(status)) // , Comment(rawValue: e ?? ""))
     if let output {
       switch output {
         case is String:
-          #expect( areEqual(j, output as? String) )
+          #expect( po.string == output as? String )
         case is Substring:
-          #expect( areEqual(j, output as! Substring) )
+          #expect( po.string == output as! Substring)
         case is Data:
-          #expect( areEqual(j, output as! Data) )
+          #expect( po.data == Array(output as! Data))
 /*
         case is Regex<String>:
           let jj = output as! Regex<String>
@@ -394,12 +395,9 @@ public actor ShellProcess {
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
  */
         case _ where eraseToAnyRegex(output) != nil:
-          if let jj = j as? String {
+          let jj = po.string
             let r = eraseToAnyRegex(output)!
             #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected output"))
-          } else {
-            Issue.record("can't test Regex on non-String")
-          }
         default:
           fatalError("not possible")
       }
@@ -407,22 +405,20 @@ public actor ShellProcess {
     
 //    if let output { #expect(j == output) }
     if let error {
-      if let e {
         switch error {
           case is String:
-            #expect(e == error as? String)
+            #expect(po.error == error as? String)
           case is Substring:
-            #expect(e == (error as! Substring))
+            #expect(po.error == (error as! Substring))
           case is Regex<String>:
             let ee = error as! Regex<String>
-            #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
+            #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
           case is Regex<Substring>:
             let ee = error as! Regex<Substring>
-            #expect( e.matches(of: ee).count > 0, Comment(rawValue: "\(e) does not match expected error"))
+            #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
           default: fatalError("not possible")
         }
       }
-    }
   }
   
   /*
@@ -517,6 +513,7 @@ extension ShellProcess {
 
 }
 
+/*
 public protocol StringOrData : Sendable {
 }
 extension String : StringOrData {}
@@ -528,6 +525,6 @@ func areEqual(_ a : StringOrData?, _ b : StringOrData?) -> Bool {
     if a as? Data == b as? Data { return true }
     return false
   }
-
+*/
 
 // ==================================================================================================
