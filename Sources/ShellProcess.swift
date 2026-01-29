@@ -103,7 +103,7 @@ public actor ShellProcess {
   */
 
 
-  @discardableResult public func run(_ input : Stdinable?) async throws -> (Int32, (any StringOrData)?, String?) {
+  @discardableResult public func run(_ input : Stdinable? = nil) async throws -> (Int32, (any StringOrData)?, String?) {
         switch input {
           case is Data:
             let asi = AsyncDataActor([input as! Data]).stream
@@ -164,7 +164,7 @@ public actor ShellProcess {
 
 
   /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  @discardableResult public func runBinary( _ input : Stdinable?) async throws -> (Int32, (any StringOrData)?, String) {
+  @discardableResult public func runBinary( _ input : Stdinable? = nil) async throws -> (Int32, (any StringOrData)?, String) {
     switch input {
       case is Data:
         let asi = AsyncDataActor([input as! Data]).stream
