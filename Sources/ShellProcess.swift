@@ -264,7 +264,7 @@ public actor ShellProcess {
     try await run(ex, withStdin: withStdin, output: output, args: args)
   }
   
-  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil, _ validation : ((ProcessOutput) -> Bool)? = nil ) async throws {
+  static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil, _ validation : ((ProcessOutput) -> ())? = nil ) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
     let po = switch withStdin {
     case is String:
@@ -332,7 +332,7 @@ public actor ShellProcess {
       }
 
     if let validation {
-      #expect(validation(po))
+      validation(po)
     }
   }
 
