@@ -25,7 +25,7 @@ public protocol ShellTest {
 //  var suiteBundle : String { get }
 }
 
-public protocol Stdinable {}
+public protocol Stdinable : Sendable {}
 extension String : Stdinable {}
 extension Data : Stdinable {}
 extension FileHandle : Stdinable {}
@@ -41,7 +41,7 @@ public protocol Matchable {}
 extension String : Matchable {}
 extension Regex : Matchable {}
 extension Substring : Matchable {}
-
+extension Data : Matchable {}
 
 extension ShellTest {
 
@@ -50,15 +50,6 @@ extension ShellTest {
   }
 
   public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
-    try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd)
-  }
-
-
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Data, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: URL? = nil) async throws {
-    try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd)
-  }
-
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Data, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd)
   }
 

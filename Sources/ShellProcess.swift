@@ -101,7 +101,31 @@ public actor ShellProcess {
     process.currentDirectoryURL = dir
   }
   */
-  
+
+
+  @discardableResult public func run(_ input : Stdinable?) async throws -> (Int32, (any StringOrData)?, String?) {
+        switch input {
+          case is Data:
+            let asi = AsyncDataActor([input as! Data]).stream
+            return try await run(asi)
+          case is String:
+            return try await run( (input as! String).data(using: .utf8)! )
+          case is FileHandle:
+            try theLaunch(input as! FileHandle)
+            return await theCaptureAsData()
+          case is AsyncStream<Data>:
+            try theLaunch(input as? AsyncStream<Data>)
+            return await theCapture()
+          case nil:
+            try theLaunch(nil)
+            return await theCapture()
+          default:
+            fatalError("not possible")
+        }
+
+  }
+
+  /*
   /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
   @discardableResult
   public func run(_ input : String?) async throws -> (Int32, String?, String?) {
@@ -119,8 +143,49 @@ public actor ShellProcess {
     else { nil as AsyncStream<Data>?}
     return try await run(asi)
   }
-  
-  
+
+
+  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
+  ///  The easiest way to generate the required AsyncStream is with:
+  ///      AsyncDataActor(input).stream // where input : [Data]
+  @discardableResult
+  public func run(_ input : AsyncStream<Data>? = nil) async throws -> (Int32, String?, String?) {
+    try theLaunch(input)
+    return await theCapture()
+  }
+
+
+  @discardableResult
+  public func run(_ input : FileHandle) async throws -> (Int32, String?, String?) {
+    try theLaunch(input)
+    return await theCapture()
+  }
+*/
+
+
+  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
+  @discardableResult public func runBinary( _ input : Stdinable?) async throws -> (Int32, (any StringOrData)?, String) {
+    switch input {
+      case is Data:
+        let asi = AsyncDataActor([input as! Data]).stream
+        return try await runBinary(asi)
+      case is String:
+        return try await runBinary( (input as! String).data(using: .utf8)! )
+      case is FileHandle:
+        try theLaunch(input as! FileHandle)
+        return await theCaptureAsData()
+      case is AsyncStream<Data>:
+        try theLaunch(input as? AsyncStream<Data>)
+        return await theCaptureAsData()
+      case nil:
+        try theLaunch(nil)
+        return await theCaptureAsData()
+      default:
+        fatalError("not possible")
+    }
+  }
+
+  /*
   /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
   @discardableResult
   public func runBinary( _ input : Data) async throws -> (Int32, Data, String) {
@@ -139,33 +204,17 @@ public actor ShellProcess {
     return await theCaptureAsData()
   }
 
-
-
-  // ==========================================================
-  
-  /// Returns the output of running `executable` with `args`. Throws an error if the process exits indicating failure.
-  ///  The easiest way to generate the required AsyncStream is with:
-  ///      AsyncDataActor(input).stream // where input : [Data]
-  @discardableResult
-  public func run(_ input : AsyncStream<Data>? = nil) async throws -> (Int32, String?, String?) {
-    try theLaunch(input)
-    return await theCapture()
-  }
-  
   @discardableResult
   public func runBinary(_ input : AsyncStream<Data>? = nil) async throws -> (Int32, Data, String) {
     try theLaunch(input)
     return await theCaptureAsData()
   }
-  
-  
-  @discardableResult
-  public func run(_ input : FileHandle) async throws -> (Int32, String?, String?) {
-    try theLaunch(input)
-    return await theCapture()
-  }
+*/
 
-  public func setOutput(_ o : FileHandle) {
+
+  // ==========================================================
+  
+   public func setOutput(_ o : FileHandle) {
     process.standardOutput = o
     try? output.fileHandleForWriting.close()
   }
@@ -297,16 +346,17 @@ public actor ShellProcess {
     try? output.fileHandleForReading.close()
     try? stderrx.fileHandleForReading.close()
   }
-  
+
   static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0,  output: String? = nil, error: String? = nil, args: Arguable...) async throws {
     try await run(ex, withStdin: withStdin, output: output, args: args)
   }
   
   static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
+    let fn : ((Stdinable?) async throws -> (Int32, (any StringOrData)?, String?)) = (output as? Data != nil) ? p.runBinary : p.run
     let (r, j, e) = switch withStdin {
     case is String:
-      try await p.run(withStdin as? String)
+      try await fn(withStdin as? String)
     case is Data:
       try await p.run(withStdin as? Data)
     case is FileHandle:
@@ -316,7 +366,7 @@ public actor ShellProcess {
     case is URL:
       try await p.run( FileHandle(forReadingFrom: withStdin as! URL) )
     case .none:
-      try await p.run()
+      try await p.run(nil)
     default:
       fatalError("not possible")
     }
@@ -326,9 +376,12 @@ public actor ShellProcess {
     if let output {
       switch output {
         case is String:
-          #expect(j == output as? String)
+          #expect( areEqual(j, output as? String) )
         case is Substring:
-          #expect(j! == output as! Substring)
+          #expect( areEqual(j, output as! Substring) )
+        case is Data:
+          #expect( areEqual(j, output as! Data) )
+/*
         case is Regex<String>:
           let jj = output as! Regex<String>
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
@@ -339,11 +392,14 @@ public actor ShellProcess {
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
         case let jj as Regex<Any>:
           #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+ */
         case _ where eraseToAnyRegex(output) != nil:
-            let jj = try #require(j)
+          if let jj = j as? String {
             let r = eraseToAnyRegex(output)!
             #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected output"))
-
+          } else {
+            Issue.record("can't test Regex on non-String")
+          }
         default:
           fatalError("not possible")
       }
@@ -369,7 +425,7 @@ public actor ShellProcess {
     }
   }
   
-  
+  /*
   static public func run(_ ex : String, withStdin: Stdinable? = nil, status: Int = 0, output: Data, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil) async throws {
     let p = ShellProcess(ex, args, env: env, cd: cd)
     let (r, j, e) = switch withStdin {
@@ -406,11 +462,11 @@ public actor ShellProcess {
       }
     }
   }
+*/
 
   
-  
 }
-  
+
 
   // ==========================================================
   
@@ -460,6 +516,18 @@ extension ShellProcess {
   }
 
 }
+
+public protocol StringOrData : Sendable {
+}
+extension String : StringOrData {}
+extension Data : StringOrData {}
+extension Substring : StringOrData {}
+
+func areEqual(_ a : StringOrData?, _ b : StringOrData?) -> Bool {
+    if a as? String == b as? String { return true }
+    if a as? Data == b as? Data { return true }
+    return false
+  }
 
 
 // ==================================================================================================
