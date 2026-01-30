@@ -4,6 +4,14 @@
 import Darwin
 import SystemPackage
 
+public protocol Stdinable : Sendable {}
+extension String : Stdinable {}
+extension Substring : Stdinable {}
+extension [UInt8] : Stdinable {}
+extension FileDescriptor : Stdinable {}
+extension AsyncStream : Stdinable {}
+extension FilePath : Stdinable {}
+
 public actor ShellProcess {
 
   public struct ProcessOutput : Sendable {
@@ -35,7 +43,7 @@ public actor ShellProcess {
     public init() {}
 
 
-
+/*
   public enum StandardInput: Sendable {
       case inherit
       case string(String)
@@ -44,12 +52,13 @@ public actor ShellProcess {
       case filePath(FilePath)
       case byteStream(AsyncStream<[UInt8]>)
   }
-
+*/
+  
     /// - Parameters:
     ///   - stdin: If non-nil, bytes are written to the child process stdin and then stdin is closed.
   public func run(
         _ executablePath: String,
-        withStdin: StandardInput? = nil,
+        withStdin: (any Stdinable)? = nil,
         args arguments: [any Arguable] = [],
         env : [String : String] = [:],
         cd : FilePath? = nil
@@ -81,21 +90,22 @@ public actor ShellProcess {
       var openedStdinFDToCloseInParent: FileDescriptor? = nil
 
       switch withStdin {
-        case .inherit: break
 
-        case .filePath(let fp):
+        case is FilePath:
+          let fp = withStdin as! FilePath
           let fd = try FileDescriptor.open(fp, .readOnly)
           openedStdinFDToCloseInParent = fd
           try addDup2AndClose(&actions, from: fd.rawValue, to: STDIN_FILENO, closeSourceInChild: false)
-        case .fileDescriptor(let fd):
+        case is FileDescriptor:
+          let fd = withStdin as! FileDescriptor
           try addDup2AndClose(&actions, from: fd.rawValue, to: STDIN_FILENO, closeSourceInChild: false)
-        case .string, .bytes, .byteStream:
+        case is Substring, is String, is [UInt8], is AsyncStream<[UInt8]>:
           let (r, w) = try FileDescriptor.pipe()
         // Wire child's stdio
           try addDup2AndClose(&actions, from: r.rawValue, to: STDIN_FILENO,  closeSourceInChild: true)
           try r.close()
           stdinWriteFDForParent = w
-        case nil:
+        default:
           break
         }
 
@@ -141,11 +151,17 @@ public actor ShellProcess {
           defer { try? w.close() }
 
         switch withStdin {
-          case .string(let s):
+          case is String:
+            let s = withStdin as! String
             try await w.writeAllBytes(Array(s.utf8))
-          case .bytes(let b):
+          case is Substring:
+            let s = String(withStdin as! Substring)
+            try await w.writeAllBytes(Array(s.utf8))
+          case is [UInt8]:
+            let b = withStdin as! [UInt8]
             try await w.writeAllBytes(b)
-          case .byteStream(let stream):
+          case is AsyncStream<[UInt8]>:
+            let stream = withStdin as! AsyncStream<[UInt8]>
             for await chunk in stream {
               if Task.isCancelled { throw CancellationError() }
               try await w.writeAllBytes(chunk)
@@ -153,7 +169,6 @@ public actor ShellProcess {
           default: break
         }
       }()
-
 
 
         // Concurrently:

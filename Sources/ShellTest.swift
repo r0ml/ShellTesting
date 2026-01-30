@@ -31,14 +31,6 @@ public protocol ShellTest {
 //  var suiteBundle : String { get }
 }
 
-/*
-public protocol Stdinable : Sendable {}
-extension String : Stdinable {}
-extension [UInt8] : Stdinable {}
-extension FileDescriptor : Stdinable {}
-extension AsyncStream : Stdinable {}
-extension FilePath : Stdinable {}
-*/
 
 public protocol Arguable : Sendable {
   func asStringArgument() -> String
@@ -62,11 +54,11 @@ extension [UInt8] : Matchable {}
 
 extension ShellTest {
 
-  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil ) async throws {
+  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil ) async throws {
     try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
   }
 
-  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil) async throws {
+  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil) async throws {
     let po = try await ShellProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
     // FIXME: why did Comment break?
     #expect(po.code == Int32(status)) // , Comment(rawValue: e ?? ""))
