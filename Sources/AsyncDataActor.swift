@@ -18,17 +18,19 @@
   OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import Darwin
+
 public final actor AsyncDataActor {
-  var d : [Data]
+  var d : [[UInt8]]
   var delay : Double
   var first = true
 
-  public init(_ d : [Data], delay : Double = 0.5) {
+  public init(_ d : [[UInt8]], delay : Double = 0.5) {
     self.d = d
     self.delay = delay
   }
 
-  func consumeD() -> Data? {
+  func consumeD() -> [UInt8]? {
     if self.d.isEmpty { return nil }
     let d = self.d.removeFirst()
     return d
@@ -38,12 +40,12 @@ public final actor AsyncDataActor {
     self.first = false
   }
 
-  public nonisolated var stream : AsyncStream<Data> {
+  public nonisolated var stream : AsyncStream<[UInt8]> {
     return AsyncStream(unfolding: {
       if await self.first {
         await self.notFirst()
       } else {
-        try? await Task.sleep(nanoseconds: UInt64(Double(NSEC_PER_SEC) * self.delay) )
+        try? await Task.sleep(nanoseconds: UInt64(Double(Darwin.NSEC_PER_SEC) * self.delay) )
       }
       let d = await self.consumeD()
       return d

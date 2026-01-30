@@ -31,14 +31,12 @@ let package = Package(
   products: [
     .library(name: "ShellTesting", targets: ["ShellTesting"])],
   dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-subprocess.git", branch: "main"),
     .package(url: "https://github.com/r0ml/CMigration.git", branch: "main"),
   ],
 
   targets: [
     .target(name: "ShellTesting",
             dependencies: [
-              .product(name: "Subprocess", package: "swift-subprocess"),
               .product(name: "CMigration", package: "CMigration"),
             ])
     ]

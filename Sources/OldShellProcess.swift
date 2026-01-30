@@ -18,21 +18,15 @@
   OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-@_exported import Foundation
+#if false
+
+// @_exported import Foundation
 @_exported import CMigration
 import Synchronization
 @_exported import Testing
-@_exported import Subprocess
 
-public struct ProcessOutput : Sendable {
-  public let code : Int32
-  public let data : [UInt8]
-  public let error : String
 
-  public var string : String { String(decoding: data, as: UTF8.self) }
-}
-
-public actor ShellProcess {
+public actor OldShellProcess {
   var process : Process = Process()
   var output : Pipe = Pipe()
   var stderrx : Pipe = Pipe()
@@ -83,7 +77,7 @@ public actor ShellProcess {
       switch $0 {
         case is String: return $0 as! String
         case is Substring: return String($0 as! Substring)
-        case is URL: let u = $0 as! URL
+        case is FilePath: let u = $0 as! FilePath
           if u.baseURL == cur.absoluteURL {
             return u.relativePath
           } else {
@@ -342,15 +336,6 @@ public actor ShellProcess {
 
   // ==========================================================
   
-public enum StringEncodingError: Error {
-    case only(String.Encoding)
-}
-
-public enum FileError: Error {
-  case notFound(String)
-}
-
-
 extension Process {
     func waitUntilExitAsync() async {
         await withCheckedContinuation { c in
@@ -365,28 +350,6 @@ extension Process {
 
 extension ShellProcess {
 
- static public func geturl(_ suiteBundle : String, _ name : String? = nil) throws -> URL {
-    var url : URL?
-    if let _ = ProcessInfo.processInfo.environment["XCTestSessionIdentifier"] {
-      let ru = Bundle(for: ShellProcess.self).resourceURL
-      if let name {
-        url = URL(fileURLWithPath: name, relativeTo: ru)
-      } else {
-        url = ru
-      }
-    } else {
-      let b = Bundle(for: ShellProcess.self)
-      // Doens't work without the directory hint!
-      url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
-      if let name {
-        url = url?.appending(path: name)
-      }
-    }
-    if let url { return url }
-    throw FileError.notFound(name ?? "")
-    
-  }
-
 }
 
-// ==================================================================================================
+#endif 

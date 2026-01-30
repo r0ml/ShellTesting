@@ -19,41 +19,109 @@
  */
 
 
+@_exported import CMigration
+import Synchronization
+@_exported import Testing
+import SystemPackage
+
+
 public protocol ShellTest {
   var cmd : String { get }
   var suiteBundle : String { get }
 //  var suiteBundle : String { get }
 }
 
+/*
 public protocol Stdinable : Sendable {}
 extension String : Stdinable {}
-extension Data : Stdinable {}
-extension FileHandle : Stdinable {}
+extension [UInt8] : Stdinable {}
+extension FileDescriptor : Stdinable {}
 extension AsyncStream : Stdinable {}
-extension URL : Stdinable {}
+extension FilePath : Stdinable {}
+*/
 
-public protocol Arguable : Sendable {}
-extension Substring : Arguable {}
-extension String : Arguable {}
-extension URL : Arguable {}
+public protocol Arguable : Sendable {
+  func asStringArgument() -> String
+}
+extension Substring : Arguable {
+  public func asStringArgument() -> String { return String(self) }
+}
+extension String : Arguable {
+  public func asStringArgument() -> String { return self }
+}
+extension FilePath : Arguable {
+  public func asStringArgument() -> String { return self.string }
+}
+
 
 public protocol Matchable {}
 extension String : Matchable {}
 extension Regex : Matchable {}
 extension Substring : Matchable {}
-extension Data : Matchable {}
+extension [UInt8] : Matchable {}
 
 extension ShellTest {
 
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: URL? = nil, _ validation : ((ProcessOutput) -> ())? = nil ) async throws {
-    try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
+  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) -> ())? = nil ) async throws {
+    try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
   }
 
-  public func run(withStdin: Stdinable? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: URL? = nil, _ validation : ((ProcessOutput) -> ())? = nil) async throws {
-    try await ShellProcess.run(cmd, withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
+  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) -> ())? = nil) async throws {
+    let po = try await ShellProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
+    // FIXME: why did Comment break?
+    #expect(po.code == Int32(status)) // , Comment(rawValue: e ?? ""))
+    if let output {
+      switch output {
+        case is String:
+          #expect( po.string == output as? String )
+        case is Substring:
+          #expect( po.string == output as! Substring)
+        case is [UInt8]:
+          #expect( po.data == Array(output as! [UInt8]))
+/*
+        case is Regex<String>:
+          let jj = output as! Regex<String>
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        case is Regex<Substring>:
+          let jj = output as! Regex<Substring>
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        case let jj as Regex<AnyRegexOutput>:
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+        case let jj as Regex<Any>:
+          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
+ */
+        case _ where eraseToAnyRegex(output) != nil:
+          let jj = po.string
+            let r = eraseToAnyRegex(output)!
+            #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected output"))
+        default:
+          fatalError("not possible")
+      }
+    }
+
+//    if let output { #expect(j == output) }
+    if let error {
+        switch error {
+          case is String:
+            #expect(po.error == error as? String)
+          case is Substring:
+            #expect(po.error == (error as! Substring))
+          case is Regex<String>:
+            let ee = error as! Regex<String>
+            #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
+          case is Regex<Substring>:
+            let ee = error as! Regex<Substring>
+            #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
+          default: fatalError("not possible")
+        }
+      }
+
+    if let validation {
+      validation(po)
+    }
   }
 
-  public func geturl(_ name : String? = nil) throws -> URL {
+  public func geturl(_ name : String? = nil) throws -> FilePath {
     return try ShellProcess.geturl(suiteBundle, name)
   }
 
