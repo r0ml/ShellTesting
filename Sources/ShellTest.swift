@@ -32,18 +32,6 @@ public protocol ShellTest {
 }
 
 
-public protocol Arguable : Sendable {
-  func asStringArgument() -> String
-}
-extension Substring : Arguable {
-  public func asStringArgument() -> String { return String(self) }
-}
-extension String : Arguable {
-  public func asStringArgument() -> String { return self }
-}
-extension FilePath : Arguable {
-  public func asStringArgument() -> String { return self.string }
-}
 
 
 public protocol Matchable {}
