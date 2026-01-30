@@ -81,10 +81,10 @@ extension ShellTest {
 
   func geturl(_ suiteBundle : String, _ name : String? = nil) throws -> FilePath {
      var url : FilePath?
-     if let _ = Environment["XCTestSessionIdentifier"] {
-       let ru = try executableDirectory() // Bundle(for: ShellProcess.self).resourceURL
+     if let tbp = Environment["XCTestBundlePath"] {
+       let ru = FilePath(tbp).appending("Contents").appending("Resources") 
        if let name {
-         url =  FilePath(ru.string + "/" + name ) //   URL(fileURLWithPath: name, relativeTo: ru)
+         url =  ru.appending(name)
        } else {
          url = ru
        }
