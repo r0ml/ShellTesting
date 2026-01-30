@@ -62,11 +62,11 @@ extension [UInt8] : Matchable {}
 
 extension ShellTest {
 
-  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) -> ())? = nil ) async throws {
+  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil ) async throws {
     try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
   }
 
-  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) -> ())? = nil) async throws {
+  public func run(withStdin: ShellProcess.StandardInput? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((ShellProcess.ProcessOutput) async throws -> ())? = nil) async throws {
     let po = try await ShellProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
     // FIXME: why did Comment break?
     #expect(po.code == Int32(status)) // , Comment(rawValue: e ?? ""))
@@ -117,7 +117,7 @@ extension ShellTest {
       }
 
     if let validation {
-      validation(po)
+      try await validation(po)
     }
   }
 
