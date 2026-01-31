@@ -35,7 +35,8 @@ extension ShellTest {
 //    try FileManager.default.createDirectory(at: j.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
 //    try? FileManager.default.removeItem(at: j)
     if let data {
-      let h = try FileDescriptor.open(j, .writeOnly, options: .create)
+      // FIXME: should there be a FileDescriptor.create -- because options: .create requires permissions
+      let h = try FileDescriptor.open(j, .writeOnly, options: .create, permissions: FilePermissions(rawValue: 0o0600))
       try h.writeAllBytes(data)
     }
     return j
