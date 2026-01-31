@@ -47,6 +47,13 @@ extension ShellTest {
   }
 
   public func run(withStdin: (any Stdinable)? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((DarwinProcess.Output) async throws -> ())? = nil) async throws {
+
+    if let wd = Environment["XCTestBundlePath"] {
+      let p = Environment["PATH"] ?? ""
+      let np = FilePath(wd).removingLastComponent().string
+      try Environment.setenv("PATH", "\(np):\(p)")
+    }
+
     let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
     // FIXME: why did Comment break?
     #expect(po.code == Int32(status)) // , Comment(rawValue: e ?? ""))
