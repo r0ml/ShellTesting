@@ -66,7 +66,7 @@ extension ShellTest {
   }
 
   // returns the full name of a test resource file
-  func inFile(_ name : String) throws -> FilePath {
+  public func inFile(_ name : String) throws -> FilePath {
     return try geturl(name)
   }
   
