@@ -27,7 +27,6 @@ import SystemPackage
 
 public protocol ShellTest {
   var cmd : String { get }
-  var suiteBundle : String { get }
 //  var suiteBundle : String { get }
 }
 
