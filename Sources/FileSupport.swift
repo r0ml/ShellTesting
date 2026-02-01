@@ -126,31 +126,28 @@ func executablePath() throws -> FilePath {
 
 // ==============================================================
 
-
 /// Returns the path to the `.xctest` bundle if present; otherwise returns the executable image path.
+/// Returns the path to the enclosing `.xctest` bundle when present (Apple platforms),
+/// otherwise returns the dynamic image/executable path containing the current module.
 public func testBundleOrExecutablePath() -> String {
-    // Ask dyld where this function lives
     var info = Dl_info()
-    let ok = dladdr(unsafeBitCast(testBundleOrExecutablePath as @convention(c) () -> String,
-                                  to: UnsafeRawPointer.self),
-                    &info)
+    let ok = dladdr(#dsohandle, &info)
     guard ok != 0, let fname = info.dli_fname else {
-        fatalError("dladdr failed")
+        return "unknown"
     }
 
     let imagePath = String(cString: fname)
 
     // If we're inside ".../*.xctest/..." trim back to the bundle root.
     if let r = imagePath.range(of: ".xctest/") {
-        let prefix = imagePath[..<r.upperBound]   // includes ".xctest/"
-        // drop trailing "/" so it’s a clean bundle path
-        return prefix.hasSuffix("/") ? String(prefix.dropLast()) : String(prefix)
+        // include ".xctest"
+        let bundlePath = imagePath[..<r.lowerBound] + ".xctest"
+        return String(bundlePath)
     }
 
-    // Otherwise just return the image path (common on Linux, or some runners)
+    // Otherwise just return the image path (common on Linux or non-bundle runners).
     return imagePath
 }
-
 
 public func packageRoot(from startFile: StaticString = #filePath) -> String {
     var path = String(describing: startFile)
