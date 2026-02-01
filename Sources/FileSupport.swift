@@ -129,7 +129,7 @@ func executablePath() throws -> FilePath {
 /// Returns the path to the `.xctest` bundle if present; otherwise returns the executable image path.
 /// Returns the path to the enclosing `.xctest` bundle when present (Apple platforms),
 /// otherwise returns the dynamic image/executable path containing the current module.
-public func testBundleOrExecutablePath() -> String {
+func testBundleOrExecutablePath() -> String {
     var info = Dl_info()
     let ok = dladdr(#dsohandle, &info)
     guard ok != 0, let fname = info.dli_fname else {
@@ -137,15 +137,21 @@ public func testBundleOrExecutablePath() -> String {
     }
 
     let imagePath = String(cString: fname)
+    let marker = ".xctest/"
 
-    // If we're inside ".../*.xctest/..." trim back to the bundle root.
-    if let r = imagePath.range(of: ".xctest/") {
-        // include ".xctest"
-        let bundlePath = imagePath[..<r.lowerBound] + ".xctest"
-        return String(bundlePath)
+    // Manual substring search (stdlib-only)
+    if let start = imagePath.firstIndex(of: ".") {
+        var i = start
+        while i < imagePath.endIndex {
+            if imagePath[i...].hasPrefix(marker) {
+                let bundleEnd = imagePath.index(i, offsetBy: ".xctest".count)
+                return String(imagePath[..<bundleEnd])
+            }
+            i = imagePath.index(after: i)
+        }
     }
 
-    // Otherwise just return the image path (common on Linux or non-bundle runners).
+    // Fallback: return the image/executable path
     return imagePath
 }
 
