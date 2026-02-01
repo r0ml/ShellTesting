@@ -95,6 +95,7 @@ extension ShellTest {
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
        let k = testBundleOrExecutablePath()
        print("executable:", k)
+       print("package root:", packageRoot())
        let kk = FilePath(k)
        url = kk.removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
        if let name {
