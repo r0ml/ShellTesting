@@ -87,6 +87,9 @@ extension ShellTest {
        let k = testBundleOrExecutablePath()
        let kk = FilePath(k)
        url = kk.removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
+
+       print("test product:", currentTestProductName())
+
        if let name {
          url = url?.appending(name)
        }
@@ -139,8 +142,6 @@ public func testBundleOrExecutablePath() -> String {
 
     let imagePath = String(cString: fname)
 
-  print("image path:", imagePath)
-
     // If we're inside ".../*.xctest/..." trim back to the bundle root.
     if let r = imagePath.range(of: ".xctest/") {
         let prefix = imagePath[..<r.upperBound]   // includes ".xctest/"
@@ -169,4 +170,32 @@ public func packageRoot(from startFile: StaticString = #filePath) -> String {
         }
     }
     fatalError("Could not locate Package.swift from \(startFile)")
+}
+
+func currentTestProductName() -> String {
+    var info = Dl_info()
+    let ok = dladdr(
+        unsafeBitCast(currentTestProductName as @convention(c) () -> String,
+                      to: UnsafeRawPointer.self),
+        &info
+    )
+    guard ok != 0, let fname = info.dli_fname else {
+        return "unknown"
+    }
+
+    let imagePath = String(cString: fname)
+
+    // If inside a .xctest bundle: ".../FooTests.xctest/Contents/MacOS/FooTests"
+    if let r = imagePath.range(of: ".xctest/") {
+        let upTo = imagePath[..<r.lowerBound] // ".../FooTests"
+        if let slash = upTo.lastIndex(of: "/") {
+            return String(upTo[upTo.index(after: slash)...])
+        }
+    }
+
+    // Fallback: executable/image filename (often the test product)
+    if let slash = imagePath.lastIndex(of: "/") {
+        return String(imagePath[imagePath.index(after: slash)...])
+    }
+    return imagePath
 }
