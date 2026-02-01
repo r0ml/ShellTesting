@@ -93,6 +93,7 @@ extension ShellTest {
 //       let b = Bundle(for: ShellProcess.self)
        // Doens't work without the directory hint!
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
+       try print("executable directory:",executableDirectory())
        url = try executableDirectory().removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
        if let name {
          url = url?.appending(name)
