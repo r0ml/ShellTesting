@@ -9,15 +9,6 @@ import MachO
 extension ShellTest {
 
 
-  public func fileContents(_ name : String) throws -> String {
-    return try fileContents(suiteBundle, name)
-  }
-
-  public func inFile(_ name : String) throws -> FilePath {
-    return try inFile(suiteBundle, name)
-  }
-
-
   public func tmpdir(_ s : String) throws -> FilePath {
     let j = Environment["TMPDIR"] ?? "/tmp" // URL(string: s, relativeTo: FileManager.default.temporaryDirectory)!
     let k = "\(j)/\(s)"
@@ -67,20 +58,20 @@ extension ShellTest {
   /// - Parameters:
   ///   - name: fileName
   /// - Returns: Data of the contents of the file on nil if not found
-  func fileContents(_ suiteBundle: String, _ name: String) throws -> String {
-    let url = try geturl(suiteBundle, name)
+  public func fileContents(_ name: String) throws -> String {
+    let url = try geturl(name)
     let data = try url.readAllBytes() //  try Data(contentsOf: url)
     let res = String(decoding: data, as: UTF8.self)
     return res
   }
 
   // returns the full name of a test resource file
-  func inFile(_ suiteBundle : String, _ name : String) throws -> FilePath {
-    return try geturl(suiteBundle, name)
+  func inFile(_ name : String) throws -> FilePath {
+    return try geturl(name)
   }
   
 
-  func geturl(_ suiteBundle : String, _ name : String? = nil) throws -> FilePath {
+  public func geturl(_ name : String? = nil) throws -> FilePath {
      var url : FilePath?
      if let tbp = Environment["XCTestBundlePath"] {
        let ru = FilePath(tbp).appending("Contents").appending("Resources") 
@@ -94,8 +85,6 @@ extension ShellTest {
        // Doens't work without the directory hint!
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
        let k = testBundleOrExecutablePath()
-       print("executable:", k)
-       print("package root:", packageRoot())
        let kk = FilePath(k)
        url = kk.removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
        if let name {
@@ -149,6 +138,8 @@ public func testBundleOrExecutablePath() -> String {
     }
 
     let imagePath = String(cString: fname)
+
+  print("image path:", imagePath)
 
     // If we're inside ".../*.xctest/..." trim back to the bundle root.
     if let r = imagePath.range(of: ".xctest/") {

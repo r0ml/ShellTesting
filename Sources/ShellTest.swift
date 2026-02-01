@@ -107,11 +107,6 @@ extension ShellTest {
       try await validation(po)
     }
   }
-
-  public func geturl(_ name : String? = nil) throws -> FilePath {
-    return try geturl(suiteBundle, name)
-  }
-
 }
 
 /*
