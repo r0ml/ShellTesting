@@ -93,12 +93,10 @@ extension ShellTest {
 //       let b = Bundle(for: ShellProcess.self)
        // Doens't work without the directory hint!
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
-       try print("executable directory:",executableDirectory())
-       for (k,v) in Environment.getenv() {
-         print("\(k)=\(v)")
-       }
-
-       url = try executableDirectory().removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
+       let k = testBundleOrExecutablePath()
+       print("executable:", k)
+       let kk = FilePath(k)
+       url = kk.removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
        if let name {
          url = url?.appending(name)
        }
@@ -138,3 +136,45 @@ func executablePath() throws -> FilePath {
 // ==============================================================
 
 
+/// Returns the path to the `.xctest` bundle if present; otherwise returns the executable image path.
+func testBundleOrExecutablePath() -> String {
+    // Ask dyld where this function lives
+    var info = Dl_info()
+    let ok = dladdr(unsafeBitCast(testBundleOrExecutablePath as @convention(c) () -> String,
+                                  to: UnsafeRawPointer.self),
+                    &info)
+    guard ok != 0, let fname = info.dli_fname else {
+        fatalError("dladdr failed")
+    }
+
+    let imagePath = String(cString: fname)
+
+    // If we're inside ".../*.xctest/..." trim back to the bundle root.
+    if let r = imagePath.range(of: ".xctest/") {
+        let prefix = imagePath[..<r.upperBound]   // includes ".xctest/"
+        // drop trailing "/" so it’s a clean bundle path
+        return prefix.hasSuffix("/") ? String(prefix.dropLast()) : String(prefix)
+    }
+
+    // Otherwise just return the image path (common on Linux, or some runners)
+    return imagePath
+}
+
+
+func packageRoot(from startFile: StaticString = #filePath) -> String {
+    var path = String(describing: startFile)
+
+    while path != "/" {
+        let candidate = path + "/Package.swift"
+        if access(candidate, F_OK) == 0 { return path }
+
+        // strip one path component (POSIX, no Foundation)
+        if let slash = path.lastIndex(of: "/") {
+            path = String(path[..<slash])
+            if path.isEmpty { path = "/" }
+        } else {
+            break
+        }
+    }
+    fatalError("Could not locate Package.swift from \(startFile)")
+}
