@@ -137,7 +137,7 @@ func executablePath() throws -> FilePath {
 
 
 /// Returns the path to the `.xctest` bundle if present; otherwise returns the executable image path.
-func testBundleOrExecutablePath() -> String {
+public func testBundleOrExecutablePath() -> String {
     // Ask dyld where this function lives
     var info = Dl_info()
     let ok = dladdr(unsafeBitCast(testBundleOrExecutablePath as @convention(c) () -> String,
@@ -161,7 +161,7 @@ func testBundleOrExecutablePath() -> String {
 }
 
 
-func packageRoot(from startFile: StaticString = #filePath) -> String {
+public func packageRoot(from startFile: StaticString = #filePath) -> String {
     var path = String(describing: startFile)
 
     while path != "/" {
