@@ -94,8 +94,10 @@ extension ShellTest {
        // Doens't work without the directory hint!
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
        try print("executable directory:",executableDirectory())
-       print(Environment.getenv())
-       
+       for (k,v) in Environment.getenv() {
+         print("\(k)=\(v)")
+       }
+
        url = try executableDirectory().removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
        if let name {
          url = url?.appending(name)
