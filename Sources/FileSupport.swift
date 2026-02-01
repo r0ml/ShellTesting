@@ -88,8 +88,6 @@ extension ShellTest {
        let kk = FilePath(k)
        url = kk.removingLastComponent().appending("\(suiteBundle).bundle").appending("Resources")
 
-       print("test product:", currentTestProductName())
-
        if let name {
          url = url?.appending(name)
        }
@@ -198,4 +196,10 @@ func currentTestProductName() -> String {
         return String(imagePath[imagePath.index(after: slash)...])
     }
     return imagePath
+}
+
+@inline(__always)
+public func currentTestModule(_ fileID: StaticString = #fileID) -> Substring {
+    let s = String(describing: fileID)
+    return s.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: true).first ?? "unknown"
 }
