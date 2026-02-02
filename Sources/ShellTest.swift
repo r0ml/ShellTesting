@@ -55,7 +55,7 @@ extension ShellTest {
 
     let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
     // FIXME: why did Comment break?
-    #expect(po.code == Int32(status), Comment("\(po.error)") ) 
+    #expect(po.code == Int32(status), Comment("\(po.error)") )
     if let output {
       switch output {
         case is String:
