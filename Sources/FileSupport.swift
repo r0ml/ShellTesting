@@ -9,14 +9,24 @@ import MachO
 extension ShellTest {
 
 
-  public func tmpdir(_ s : String) throws -> FilePath {
+  public func tmpdir(_ s : String? = nil) throws -> FilePath {
     let j = Environment["TMPDIR"] ?? "/tmp" // URL(string: s, relativeTo: FileManager.default.temporaryDirectory)!
-    let k = "\(j)/\(s)"
+    guard let s else {
+      return FilePath(j)
+    }
+    let k = FilePath("\(j)/\(s)")
     // FIXME: do I need to sort out intermediate directories?
-    let a = mkdir(k, 0o0700)
-    if a == 0 { return FilePath(k) }
+    if k.exists {
+      let m = try FileMetadata(for: k)
+      if m.filetype == .directory {
+        return k
+      }
+      rm(k)
+    }
+    let a = mkdir(k.string, 0o0700)
+    if a == 0 { return k }
     else {
-      throw POSIXErrno(errno)
+      throw POSIXErrno(fn: "mkdir")
     }
   }
 
