@@ -6,6 +6,13 @@ import SystemPackage
 import Darwin
 import MachO
 
+extension FilePath {
+  public var exists : Bool { get {
+    if let _ = try? FileMetadata(for: self) { return true }
+    return false
+  }}
+}
+
 extension ShellTest {
 
 
