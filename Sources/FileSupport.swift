@@ -15,19 +15,8 @@ extension ShellTest {
       return FilePath(j)
     }
     let k = FilePath("\(j)/\(s)")
-    // FIXME: do I need to sort out intermediate directories?
-    if k.exists {
-      let m = try FileMetadata(for: k)
-      if m.filetype == .directory {
-        return k
-      }
-      rm(k)
-    }
-    let a = mkdir(k.string, 0o0700)
-    if a == 0 { return k }
-    else {
-      throw POSIXErrno(fn: "mkdir")
-    }
+    try k.createDirectory(FilePermissions(rawValue: 0o0700))
+    return k
   }
 
   public func tmpfile(_ s : String, _ data : [UInt8]? = nil) throws -> FilePath {
