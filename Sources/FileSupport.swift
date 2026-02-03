@@ -51,12 +51,12 @@ extension ShellTest {
   }
 
   public func rm(_ s : FilePath) {
-    unlink(s.string)
+    try? s.removeTree()
 //    try? FileManager.default.removeItem(at: s)
   }
 
   public func rm(_ s : [FilePath]) {
-    s.forEach { rm($0) }
+    s.forEach { try? $0.removeTree() }
   }
 
   public func rm( _ s : FilePath...) {
