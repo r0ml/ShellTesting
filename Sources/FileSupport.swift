@@ -38,6 +38,8 @@ extension ShellTest {
     if let data {
       // FIXME: should there be a FileDescriptor.create -- because options: .create requires permissions
       try j.removeTree()
+
+      try j.removingLastComponent().createDirectory(FilePermissions(rawValue: 0o0600))
       let h = try FileDescriptor.open(j, .writeOnly, options: .create, permissions: FilePermissions(rawValue: 0o0600))
       try h.writeAllBytes(data)
     }
