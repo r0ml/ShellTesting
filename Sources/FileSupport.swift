@@ -84,17 +84,16 @@ extension ShellTest {
 
   public func geturl(_ name : String? = nil) throws -> FilePath {
      var url : FilePath?
-/*     if let tbp = Environment["XCTestBundlePath"] {
-
-//       let ru = FilePath(tbp).appending("Contents").appending("Resources")
-       let ru = FilePath(Bundle.main.resourcePath!).appending("Resources")
+     if let tbp = Environment["XCTestBundlePath"] {
+       let ru = FilePath(tbp).appending("\(suiteBundle).bundle")
+         .appending("Contents").appending("Resources")
+         .appending("Resources")
        if let name {
          url =  ru.appending(name)
        } else {
          url = ru
        }
      } else {
- */
 //       let b = Bundle(for: ShellProcess.self)
        // Doens't work without the directory hint!
 //       url = b.bundleURL.deletingLastPathComponent().appending(path: "\(suiteBundle).bundle").appending(path: "Resources", directoryHint: .isDirectory)
@@ -105,7 +104,7 @@ extension ShellTest {
        if let name {
          url = url?.appending(name)
        }
-//     }
+     }
      if let url { return url }
      throw FileError.notFound(name ?? "")
 
