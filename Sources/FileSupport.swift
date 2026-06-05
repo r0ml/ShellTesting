@@ -85,7 +85,9 @@ extension ShellTest {
   public func geturl(_ name : String? = nil) throws -> FilePath {
      var url : FilePath?
      if let tbp = Environment["XCTestBundlePath"] {
-       let ru = FilePath(tbp).appending("\(suiteBundle).bundle")
+       let ru = FilePath(tbp)
+         .appending("Contents").appending("Resources")
+         .appending("\(suiteBundle).bundle")
          .appending("Contents").appending("Resources")
          .appending("Resources")
        if let name {
