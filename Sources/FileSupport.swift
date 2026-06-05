@@ -6,6 +6,8 @@ import SystemPackage
 import Darwin
 import MachO
 
+import Foundation
+
 extension FilePath {
   public var exists : Bool { get {
     if let _ = try? FileMetadata(for: self) { return true }
@@ -83,7 +85,9 @@ extension ShellTest {
   public func geturl(_ name : String? = nil) throws -> FilePath {
      var url : FilePath?
      if let tbp = Environment["XCTestBundlePath"] {
-       let ru = FilePath(tbp).appending("Contents").appending("Resources") 
+
+//       let ru = FilePath(tbp).appending("Contents").appending("Resources")
+       let ru = FilePath(Bundle.main.resourcePath!).appending("Resources")
        if let name {
          url =  ru.appending(name)
        } else {

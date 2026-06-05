@@ -27,7 +27,7 @@ import PackageDescription
 let package = Package(
   name: "ShellTesting",
   // Mutex is only available in v15 or newer
-  platforms: [.macOS(.v15)],
+  platforms: [.macOS(.v15), .iOS(.v18)],
   products: [
     .library(name: "ShellTesting", targets: ["ShellTesting"])],
   dependencies: [
