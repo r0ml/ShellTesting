@@ -22,7 +22,7 @@
 @_exported import CMigration
 import Synchronization
 @_exported import Testing
-import SystemPackage
+import System
 
 
 public protocol ShellTest {

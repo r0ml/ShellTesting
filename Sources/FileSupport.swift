@@ -2,7 +2,7 @@
 // Modernized by Robert "r0ml" Lefkowitz <code@liberally.net> in 2026
 
 import CMigration
-import SystemPackage
+import System
 import Darwin
 import MachO
 
