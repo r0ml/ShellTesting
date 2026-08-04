@@ -53,7 +53,10 @@ extension ShellTest {
       try Environment.setenv("PATH", "\(np):\(p)")
     }
 
-    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
+    var envx = env
+    envx["SHELLDEBUGGING"]="1"
+
+    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: envx, cd: cd)
     // FIXME: why did Comment break?
     #expect(po.code == Int32(status), Comment("\(po.error)") )
     if let output {
