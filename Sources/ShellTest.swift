@@ -53,8 +53,8 @@ extension ShellTest {
       try Environment.setenv("PATH", "\(np):\(p)")
     }
 
-    var envx = env
-    envx["SHELLDEBUGGING"]="1"
+    // var envx = env
+    // envx["SHELLDEBUGGING"]="1"
 
     let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: envx, cd: cd)
     // FIXME: why did Comment break?
