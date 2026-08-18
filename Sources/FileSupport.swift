@@ -45,8 +45,8 @@ extension ShellTest {
   }
 
   public func tmpfile(_ s : String, _ data : String, encoded: IEncoding = .utf8) throws -> FilePath {
-    let b = encoded.toBytes(data)
-    return try tmpfile(s, b)
+    let b = try encoded.toBytes(data)
+  return try tmpfile(s, b as? [UInt8])
   }
 
   public func rm(_ s : FilePath) {
