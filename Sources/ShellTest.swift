@@ -38,14 +38,24 @@ extension String : Matchable {}
 extension Regex : Matchable {}
 extension Substring : Matchable {}
 extension [UInt8] : Matchable {}
+extension FilePath : Matchable {}
+
 
 extension ShellTest {
 
-  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((DarwinProcess.Output) async throws -> ())? = nil ) async throws {
-    try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, validation)
+  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0,
+                  output: Matchable? = nil, error: Matchable? = nil,
+                  args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, 
+                  encoding: IEncoding = .utf8,
+                  validation: ((DarwinProcess.Output) async throws -> ())? = nil ) async throws {
+    try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, encoding: encoding, validation: validation)
   }
 
-  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0, output: Matchable? = nil, error: Matchable? = nil, args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil, _ validation : ((DarwinProcess.Output) async throws -> ())? = nil) async throws {
+  public func run(withStdin: (any Stdinable)? = nil, status: Int = 0,
+                  output: Matchable? = nil, error: Matchable? = nil,
+                  args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil,
+                  encoding: IEncoding = .utf8,
+                  validation: ((DarwinProcess.Output) async throws -> ())? = nil) async throws {
 
     if let wd = Environment["XCTestBundlePath"] {
       let p = Environment["PATH"] ?? ""
@@ -55,31 +65,27 @@ extension ShellTest {
 
     // var envx = env
     // envx["SHELLDEBUGGING"]="1"
+    
+    var xenv = env
+    xenv["LC_CTYPE"] = encoding.canonical 
 
-    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd)
+    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: xenv, cd: cd)
     #expect(po.code == Int32(status), Comment("\(po.error)") )
     if let output {
       switch output {
         case is String:
-          #expect( po.string == output as? String )
+          let stdout = try po.string(encoded: encoding)
+          #expect( stdout == output as? String )
         case is Substring:
-          #expect( po.string == output as! Substring)
+          let stdout = try po.string(encoded: encoding)
+          #expect( stdout == output as! Substring)
         case is [UInt8]:
           #expect( po.data == Array(output as! [UInt8]))
-/*
-        case is Regex<String>:
-          let jj = output as! Regex<String>
-          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
-        case is Regex<Substring>:
-          let jj = output as! Regex<Substring>
-          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
-        case let jj as Regex<AnyRegexOutput>:
-          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
-        case let jj as Regex<Any>:
-          #expect( j!.matches(of: jj).count > 0, Comment(rawValue: "\(j!) does not match expected output"))
- */
+        case is FilePath:
+          let dd = try (output as! FilePath).readAllBytes()
+          #expect( po.data == dd )
         case _ where eraseToAnyRegex(output) != nil:
-          let jj = po.string
+          let jj = try po.string(encoded: encoding)
             let r = eraseToAnyRegex(output)!
             #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected output"))
         default:
@@ -109,15 +115,3 @@ extension ShellTest {
     }
   }
 }
-
-/*
-func numberStream() -> AsyncStream<Int> {
-    return AsyncStream { continuation in
-        for number in 1...100 {
-            continuation.yield(number)
-        }
-        continuation.finish()
-    }
-}
-*/
-

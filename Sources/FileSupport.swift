@@ -44,8 +44,9 @@ extension ShellTest {
     return j
   }
 
-  public func tmpfile(_ s : String, _ data : String) throws -> FilePath {
-    return try tmpfile(s, Array(data.utf8))
+  public func tmpfile(_ s : String, _ data : String, encoded: IEncoding = .utf8) throws -> FilePath {
+    let b = encoded.toBytes(data)
+    return try tmpfile(s, b)
   }
 
   public func rm(_ s : FilePath) {
@@ -69,10 +70,10 @@ extension ShellTest {
   /// - Parameters:
   ///   - name: fileName
   /// - Returns: Data of the contents of the file on nil if not found
-  public func fileContents(_ name: String) throws -> String {
+  public func fileContents(_ name: String, encoding: IEncoding = .utf8) throws -> String {
     let url = try geturl(name)
     let data = try url.readAllBytes() //  try Data(contentsOf: url)
-    let res = String(decoding: data, as: UTF8.self)
+    let res = try encoding.toString(data)
     return res
   }
 
