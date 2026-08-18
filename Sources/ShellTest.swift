@@ -66,10 +66,10 @@ extension ShellTest {
     // var envx = env
     // envx["SHELLDEBUGGING"]="1"
     
-    var xenv = env
-    xenv["LC_CTYPE"] = encoding.canonical 
+//    var xenv = env
+//    xenv["LC_CTYPE"] = encoding.canonical 
 
-    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: xenv, cd: cd)
+    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, cd: cd, encoding: encoding)
     #expect(po.code == Int32(status), Comment("\(po.error)") )
     if let output {
       switch output {
