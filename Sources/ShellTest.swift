@@ -101,7 +101,7 @@ extension ShellTest {
           case is Substring:
             #expect(po.error == (error as! Substring))
           case _ where eraseToAnyRegex(error as Any) != nil:
-            let jj = try po.string(encoded: encoding)
+            let jj = po.error
               let r = eraseToAnyRegex(error as Any)!
               #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected error"))
 /*
