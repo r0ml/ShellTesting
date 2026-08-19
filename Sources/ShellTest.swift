@@ -100,12 +100,18 @@ extension ShellTest {
             #expect(po.error == error as? String)
           case is Substring:
             #expect(po.error == (error as! Substring))
+          case _ where eraseToAnyRegex(error as Any) != nil:
+            let jj = try po.string(encoded: encoding)
+              let r = eraseToAnyRegex(error as Any)!
+              #expect(jj.matches(of: r).count > 0, Comment(rawValue: "\(jj) does not match expected error"))
+/*
           case is Regex<String>:
             let ee = error as! Regex<String>
             #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
           case is Regex<Substring>:
             let ee = error as! Regex<Substring>
             #expect( po.error.matches(of: ee).count > 0, Comment(rawValue: "\(po.error) does not match expected error"))
+ */
           default: fatalError("not possible")
         }
       }
