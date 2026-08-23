@@ -10,7 +10,7 @@ import Foundation
 
 extension FilePath {
   public var exists : Bool { get {
-    if let _ = try? FileMetadata(for: self) { return true }
+    if let _ = try? self.stat() { return true }
     return false
   }}
 }
