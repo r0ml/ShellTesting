@@ -46,14 +46,16 @@ extension ShellTest {
   public func run(withStdin: (any Stdinable)? = nil, status: Int = 0,
                   output: Matchable? = nil, error: Matchable? = nil,
                   args: Arguable..., env: [String:String] = [:], cd: FilePath? = nil, 
+                  newProcessGroup: Bool = false,
                   encoding: IEncoding = .utf8,
                   validation: ((DarwinProcess.Output) async throws -> ())? = nil ) async throws {
-    try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, encoding: encoding, validation: validation)
+    try await run(withStdin: withStdin, status: status, output: output, error: error, args: args, env: env, cd: cd, newProcessGroup: newProcessGroup, encoding: encoding, validation: validation)
   }
 
   public func run(withStdin: (any Stdinable)? = nil, status: Int = 0,
                   output: Matchable? = nil, error: Matchable? = nil,
                   args: [Arguable], env: [String:String] = [:], cd: FilePath? = nil,
+                  newProcessGroup: Bool = false,
                   encoding: IEncoding = .utf8,
                   validation: ((DarwinProcess.Output) async throws -> ())? = nil) async throws {
 
@@ -69,7 +71,7 @@ extension ShellTest {
 //    var xenv = env
 //    xenv["LC_CTYPE"] = encoding.canonical 
 
-    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd, encoding: encoding)
+    let po = try await DarwinProcess().run(cmd, withStdin: withStdin, args: args, env: env, cd: cd, newProcessGroup: newProcessGroup, encoding: encoding)
     #expect(po.code == Int32(status), Comment("\(po.error)") )
     if let output {
       switch output {
